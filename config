@@ -1,0 +1,4 @@
+
+export LFS=$PWD
+export LFS_TOOLS=$LFS/tools
+export LFS_TARBALLS=$LFS/tarballs
