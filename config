@@ -1,4 +1,11 @@
+# Define the target triplet to distinguish it from the host toolchain
+export AL_TGT=$(uname -m)-aardvark-linux-gnu
 
-export LFS=$PWD
-export LFS_TOOLS=$LFS/tools
-export LFS_TARBALLS=$LFS/tarballs
+# Define a variable to point to the root of the project
+export AL=$PWD
+
+# Variable point to the toolchain directory
+export AL_TOOLS=$AL/tools
+
+# Variable pointing to the tarballs directory
+export AL_TARBALLS=$AL/tarballs
