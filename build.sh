@@ -39,43 +39,46 @@ mkdir -p "$AL_TARBALLS/binutils/build"
 cd "$AL_TARBALLS/binutils/build"
 if [ ! -f Makefile ]; then
     ../configure \
-	--prefix="$AL_TOOLS" \
-	--with-sysroot="$AL" \
-	--with-lib-path="$AL_TOOLS" \
-	--target="$AL_TGT" \
-	--disable-shared \
-	--disable-nls \
-	--disable-werror 
+        LDFLAGS="--static" \
+        --prefix="$AL_TOOLS" \
+        --with-sysroot="$AL" \
+        --with-lib-path="$AL_TOOLS" \
+        --target="$AL_TGT" \
+        --disable-shared \
+        --disable-nls \
+        --disable-werror
 fi
-if [ ! -f "$AL_TOOLS/bin/ar" ]; then
+if [ ! -f "$AL_TOOLS/bin/$AL_TGT-ar" ]; then
     make
     make install
 fi
 cd $AL
 
-# Test that the new linker works
-echo 'int main(int argc, char** argv) { return 0; }' > test.c
-gcc -o test test.c
-rm test test.c
-which ld
-
 # Build clang and install it in the
 mkdir -p "$AL_TARBALLS/llvm/build"
 cd "$AL_TARBALLS/llvm/build"
 if [ ! -f Makefile ]; then
-    cmake -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$AL_TOOLS" -DBUILD_SHARED_LIBS=OFF ../
+    LDFLAGS="-static" cmake -G"Unix Makefiles" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$AL_TOOLS" \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DLLVM_BUILD_TOOLS=OFF \
+        -DLLVM_BUILD_EXAMPLES=OFF \
+        -DLLVM_BUILD_TESTS=OFF \
+        ../
 fi
 if [ ! -f "$AL_TOOLS/bin/clang" ]; then
-    make clang
+    make LDFLAGS="-static" clang
     make install
 fi
 
-## Test that the new clang binary works
-#echo 'int main(int argc, char** argv) { return 0; }' > test.c
-#clang -o test test.c
-#if [ "0" -ne "`readelf -d test | grep -c '0x'`" ]; then
-#    echo "Expected toolchain to compile statically but target was dynamically linked."
-#    exit 1
-#else
-#    rm test test.c
-#fi
+# Test that the new clang binary works
+echo 'int main(int argc, char** argv) { return 0; }' > cctest.c
+clang -static -target $AL_TGT -o cctest cctest.c
+if [ "0" -ne "`readelf -d cctest | grep -c '0x'`" ]; then
+    rm cctest cctest.c
+    echo "Expected toolchain to compile statically but target was dynamically linked."
+    exit 1
+else
+    rm cctest cctest.c
+fi
