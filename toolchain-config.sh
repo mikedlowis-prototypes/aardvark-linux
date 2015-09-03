@@ -6,7 +6,7 @@
 MAKEFLAGS=-j8
 
 # Tell the build scripts where the cross compiler should go
-CC_BASE_PREFIX="../../root/tools/"
+CC_BASE_PREFIX="$PWD/../../root/tools/"
 
 # If you use arm, you may need more fine-tuning:
 # arm hardfloat v7
