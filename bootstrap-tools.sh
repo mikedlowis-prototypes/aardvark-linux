@@ -4,40 +4,14 @@
 # Configuration Settings
 ###############################################################################
 
-# Define a variable to point to the root of the project
-export AL=$PWD
+# Turn off command hashing and make the script exit when a command errors.
+set -e
 
-# Set the locale to be UTF-8
-export LC_ALL=en_US.UTF-8
-export LANG=en_US.UTF-8
-export LANGUAGE=en_US.UTF-8
-
-# Setup the path to use the cross-tools when they're available
-export PATH=$AL/tools/bin:$PATH
+# Load the config settings
+. ./config
 
 # Make sure CFLAGS isnt set
 unset CFLAGS
-
-# Set the host triple for the cross compiler
-export AL_HOST=$MACHTYPE
-
-# Select the target architecture
-export AL_ARCH=$(uname -m)
-
-# Define the target triplet to distinguish it from the host toolchain
-export AL_TGT=$AL_ARCH-aardvark-linux-gnu
-
-# Variable pointing to the toolchain directory
-export AL_TOOLS=$AL/tools
-
-# Variable pointing to the target root directory
-export AL_ROOT=$AL/root
-
-# Variable pointing to the tarballs directory
-export AL_TARBALLS=$AL/tarballs
-
-# Variable pointing to the sources directory
-export AL_SOURCES=$AL/sources
 
 ###############################################################################
 # Helper Functions
@@ -46,8 +20,8 @@ fetch(){
     if [ ! -d "$3" ]; then
         mkdir -p "$AL_TARBALLS"
         if [ ! -f "$AL_TARBALLS/$1" ]; then
-            echo curl "$2/$1" > "$AL_TARBALLS/$1"
-            curl "$2/$1" > "$AL_TARBALLS/$1"
+            echo curl -L --retry 5 "$2/$1" > "$AL_TARBALLS/$1"
+            curl -L --retry 5 "$2/$1" > "$AL_TARBALLS/$1"
         fi
         mkdir -p "$3"
         tar -xvf "$AL_TARBALLS/$1" -C "$3" --strip-components 1
@@ -64,9 +38,6 @@ gitclone(){
 # Check Command Requirements
 ###############################################################################
 
-# Turn off command hashing and make the script exit when a command errors.
-set -e
-
 cmds="git curl make xz"
 echo Checking for required commands:
 for cmd in $cmds; do
@@ -76,14 +47,14 @@ done
 ###############################################################################
 # Fetch and Extract Dependencies
 ###############################################################################
-fetch linux-4.2.tar.xz http://www.kernel.org/pub/linux/kernel/v4.x/ "$AL_SOURCES/linux"
-fetch binutils-2.25.tar.bz2 http://ftp.gnu.org/gnu/binutils/ "$AL_SOURCES/binutils"
-fetch gcc-5.2.0.tar.bz2 http://ftp.gnu.org/gnu/gcc/gcc-5.2.0/ "$AL_SOURCES/gcc"
-fetch gmp-6.0.0a.tar.xz http://ftp.gnu.org/gnu/gmp/           "$AL_SOURCES/gcc/gmp"
-fetch mpc-1.0.3.tar.gz  http://ftp.gnu.org/gnu/mpc/           "$AL_SOURCES/gcc/mpc"
-fetch mpfr-3.1.3.tar.xz http://ftp.gnu.org/gnu/mpfr/          "$AL_SOURCES/gcc/mpfr"
-fetch musl-1.1.10.tar.gz http://www.musl-libc.org/releases/ "$AL_SOURCES/musl"
-fetch dash-0.5.8.tar.gz http://gondor.apana.org.au/~herbert/dash/files/ "$AL_SOURCES/dash"
+fetch linux-4.2.tar.xz      http://www.kernel.org/pub/linux/kernel/v4.x/    "$AL_SOURCES/linux"
+fetch binutils-2.25.tar.bz2 http://ftp.gnu.org/gnu/binutils/                "$AL_SOURCES/binutils"
+fetch gcc-5.2.0.tar.bz2     http://ftp.gnu.org/gnu/gcc/gcc-5.2.0/           "$AL_SOURCES/gcc"
+fetch gmp-6.0.0a.tar.xz     http://ftp.gnu.org/gnu/gmp/                     "$AL_SOURCES/gcc/gmp"
+fetch mpc-1.0.3.tar.gz      http://ftp.gnu.org/gnu/mpc/                     "$AL_SOURCES/gcc/mpc"
+fetch mpfr-3.1.3.tar.xz     http://ftp.gnu.org/gnu/mpfr/                    "$AL_SOURCES/gcc/mpfr"
+fetch musl-1.1.10.tar.gz    http://www.musl-libc.org/releases/              "$AL_SOURCES/musl"
+fetch dash-0.5.8.tar.gz     http://gondor.apana.org.au/~herbert/dash/files/ "$AL_SOURCES/dash"
 
 ###############################################################################
 # Build the Cross-Compiler
@@ -221,4 +192,6 @@ fi
 make -j8
 make install
 cd $AL
+
+mkdir -p $AL_ROOT/$AL_TOOLS
 
