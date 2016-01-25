@@ -64,14 +64,14 @@ export LDFLAGS="--static"
 ################################################################################
 
 # Install sbase
-gitclone http://git.suckless.org/sbase $AL_SOURCES/sbase
+gitclone http://git.suckless.org/sbase "$AL_SOURCES/sbase"
 cd "$AL_SOURCES/sbase"
 make CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS" -j8
 make PREFIX=$AL_ROOT install
 cd $AL
 
 # Install ubase
-gitclone http://git.suckless.org/ubase $AL_SOURCES/ubase
+gitclone http://git.suckless.org/ubase "$AL_SOURCES/ubase"
 cd "$AL_SOURCES/ubase"
 make CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS" -j8
 make PREFIX=$AL_ROOT install
@@ -85,9 +85,20 @@ if [ ! -f mksh ]; then
     ./Build.sh
 fi
 mkdir -p "$AL_ROOT/etc/" "$AL_ROOT/usr/share/doc/mksh/examples"
-cp mksh "$AL_ROOT/bin/"
+cp -f mksh "$AL_ROOT/bin/"
 chmod 555 "$AL_ROOT/bin/mksh"
-cp dot.mkshrc "$AL_ROOT/usr/share/doc/mksh/examples"
+cp -f dot.mkshrc "$AL_ROOT/usr/share/doc/mksh/examples"
 ln -svf mksh "$AL_ROOT/bin/sh"
 cd $AL
+
+# Install kernel
+fetch linux-4.4.tar.xz https://cdn.kernel.org/pub/linux/kernel/v4.x/ "$AL_SOURCES/linux"
+cd "$AL_SOURCES/linux"
+if [ ! -f "$AL_ROOT/vmlinux" ]; then
+    make mrproper
+    cp "$AL/kernel-config" .config
+    make -j8
+    cp "$AL_SOURCES/linux/vmlinux" "$AL_ROOT/vmlinux"
+fi
+cd "$AL"
 
