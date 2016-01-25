@@ -22,24 +22,24 @@ export AL_TARBALLS=$AL/tarballs
 # Variable pointing to the sources directory
 export AL_SOURCES=$AL/sources
 
-export AL_TGT=$(uname -m)-linux-musl
 
 ###############################################################################
 # Build Environment Settings
 ###############################################################################
 
 # Setup the path to use the cross-tools when they're available
+export AL_TGT=$(uname -m)-linux-musl
 export PATH=$AL_ROOT/tools/$AL_TGT/bin:$PATH
 
-export CC=$AL_TGT-gcc
-export CXX=$AL_TGT-g++
-export AR=$AL_TGT-ar
-export AS=$AL_TGT-as
-export LD=$AL_TGT-ld
-export RANLIB=$AL_TGT-ranlib
-export READELF=$AL_TGT-readelf
-export STRIP=$AL_TGT-strip
-
-export CFLAGS="-static"
-export LDFLAGS="-static"
+#export CC=$AL_TGT-gcc
+#export CXX=$AL_TGT-g++
+#export AR=$AL_TGT-ar
+#export AS=$AL_TGT-as
+#export LD=$AL_TGT-ld
+#export RANLIB=$AL_TGT-ranlib
+#export READELF=$AL_TGT-readelf
+#export STRIP=$AL_TGT-strip
+#
+#export CFLAGS="-static"
+#export LDFLAGS="-static"
 

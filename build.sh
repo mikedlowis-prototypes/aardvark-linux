@@ -37,35 +37,57 @@ gitclone(){
 ###############################################################################
 # Build the Cross-Compiler
 ###############################################################################
-mkdir -vp $AL_TOOLS
-gitclone https://github.com/sabotage-linux/musl-cross.git "$AL_SOURCES/musl-cross"
-cd "$AL_SOURCES/musl-cross"
-cp "$AL/musl-cross-config.sh" config.sh
-./build.sh
-cd "$AL"
+if [ ! -d "$AL_TOOLS/$(uname -m)-linux-musl" ]; then
+    mkdir -vp $AL_TOOLS
+    gitclone https://github.com/sabotage-linux/musl-cross.git "$AL_SOURCES/musl-cross"
+    cd "$AL_SOURCES/musl-cross"
+    cp "$AL/musl-cross-config.sh" config.sh
+    ./build.sh
+    cd "$AL"
+fi
 
 ################################################################################
 ## Setup the Build Environment
 ################################################################################
-#export CC="$(uname -m)-linux-musl-gcc"
-#export CXX="$(uname -m)-linux-musl-g++"
-#export AR="$(uname -m)-linux-musl-ar"
-#export AS="$(uname -m)-linux-musl-as"
-#export LD="$(uname -m)-linux-musl-ld"
-#export RANLIB="$(uname -m)-linux-musl-ranlib"
-#export READELF="$(uname -m)-linux-musl-readelf"
-#export STRIP="$(uname -m)-linux-musl-strip"
-#export CFLAGS="-static"
-#export LDFLAGS="-static"
-#
+export CC="$(uname -m)-linux-musl-gcc"
+export CXX="$(uname -m)-linux-musl-g++"
+export AR="$(uname -m)-linux-musl-ar"
+export AS="$(uname -m)-linux-musl-as"
+export LD="$(uname -m)-linux-musl-ld"
+export RANLIB="$(uname -m)-linux-musl-ranlib"
+export READELF="$(uname -m)-linux-musl-readelf"
+export STRIP="$(uname -m)-linux-musl-strip"
+export LDFLAGS="--static"
+
 ################################################################################
 ## Setup the Build Environment
 ################################################################################
-#
-## Install sbase
-#gitclone http://git.suckless.org/sbase $AL_SOURCES/sbase
-#cd "$AL_SOURCES/sbase"
-#make CC=$CC -j8
-#make PREFIX=$AL_ROOT install
-#cd $AL
+
+# Install sbase
+gitclone http://git.suckless.org/sbase $AL_SOURCES/sbase
+cd "$AL_SOURCES/sbase"
+make CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS" -j8
+make PREFIX=$AL_ROOT install
+cd $AL
+
+# Install ubase
+gitclone http://git.suckless.org/ubase $AL_SOURCES/ubase
+cd "$AL_SOURCES/ubase"
+make CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS" -j8
+make PREFIX=$AL_ROOT install
+cd $AL
+
+# Install mksh
+fetch mksh-R52b.tgz https://www.mirbsd.org/MirOS/dist/mir/mksh/ "$AL_SOURCES/mksh"
+cd "$AL_SOURCES/mksh"
+if [ ! -f mksh ]; then
+    chmod +x Build.sh
+    ./Build.sh
+fi
+mkdir -p "$AL_ROOT/etc/" "$AL_ROOT/usr/share/doc/mksh/examples"
+cp mksh "$AL_ROOT/bin/"
+chmod 555 "$AL_ROOT/bin/mksh"
+cp dot.mkshrc "$AL_ROOT/usr/share/doc/mksh/examples"
+ln -svf mksh "$AL_ROOT/bin/sh"
+cd $AL
 
