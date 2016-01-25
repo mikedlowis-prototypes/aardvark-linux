@@ -10,9 +10,6 @@ set -e
 # Load the config settings
 . ./config.sh
 
-# Make sure CFLAGS isnt set
-unset CFLAGS
-
 ###############################################################################
 # Helper Functions
 ###############################################################################
@@ -84,21 +81,31 @@ if [ ! -f mksh ]; then
     chmod +x Build.sh
     ./Build.sh
 fi
-mkdir -p "$AL_ROOT/etc/" "$AL_ROOT/usr/share/doc/mksh/examples"
+mkdir -p "$AL_ROOT/etc/" "$AL_ROOT/share/doc/mksh/examples"
 cp -f mksh "$AL_ROOT/bin/"
 chmod 555 "$AL_ROOT/bin/mksh"
-cp -f dot.mkshrc "$AL_ROOT/usr/share/doc/mksh/examples"
+cp -f dot.mkshrc "$AL_ROOT/share/doc/mksh/examples"
 ln -svf mksh "$AL_ROOT/bin/sh"
 cd $AL
 
-# Install kernel
-fetch linux-4.4.tar.xz https://cdn.kernel.org/pub/linux/kernel/v4.x/ "$AL_SOURCES/linux"
-cd "$AL_SOURCES/linux"
-if [ ! -f "$AL_ROOT/vmlinux" ]; then
-    make mrproper
-    cp "$AL/kernel-config" .config
-    make -j8
-    cp "$AL_SOURCES/linux/vmlinux" "$AL_ROOT/vmlinux"
-fi
-cd "$AL"
+# Install make
+fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_ROOT/src/make"
+#cd "$AL_SOURCES/make"
+#if [ ! -f "$AL_ROOT/bin/make" ]; then
+#    ./configure               \
+#        --prefix="$AL_TOOLS/" \
+#        --without-guile       \
+#        --without-dmalloc     \
+#        --disable-nls         \
+#        --disable-rpath       \
+#        --disable-largefile   \
+#        --disable-job-server  \
+#        --disable-load
+#    make -j8
+#    make install
+#fi
+#cd "$AL"
+
+# Install kernel sources
+fetch linux-4.4.tar.xz https://cdn.kernel.org/pub/linux/kernel/v4.x/ "$AL_ROOT/src/linux"
 
