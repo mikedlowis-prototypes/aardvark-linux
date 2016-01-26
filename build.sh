@@ -43,9 +43,9 @@ if [ ! -d "$AL_TOOLS/$(uname -m)-linux-musl" ]; then
     cd "$AL"
 fi
 
-################################################################################
-## Setup the Build Environment
-################################################################################
+###############################################################################
+# Setup the Build Environment
+###############################################################################
 export CC="$(uname -m)-linux-musl-gcc"
 export CXX="$(uname -m)-linux-musl-g++"
 export AR="$(uname -m)-linux-musl-ar"
@@ -56,9 +56,9 @@ export READELF="$(uname -m)-linux-musl-readelf"
 export STRIP="$(uname -m)-linux-musl-strip"
 export LDFLAGS="--static"
 
-################################################################################
-## Setup the Build Environment
-################################################################################
+###############################################################################
+# Install the Base Packages
+###############################################################################
 
 # Install sbase
 gitclone http://git.suckless.org/sbase "$AL_SOURCES/sbase"
@@ -88,24 +88,19 @@ cp -f dot.mkshrc "$AL_ROOT/share/doc/mksh/examples"
 ln -svf mksh "$AL_ROOT/bin/sh"
 cd $AL
 
-# Install make
-fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_ROOT/src/make"
-#cd "$AL_SOURCES/make"
-#if [ ! -f "$AL_ROOT/bin/make" ]; then
-#    ./configure               \
-#        --prefix="$AL_TOOLS/" \
-#        --without-guile       \
-#        --without-dmalloc     \
-#        --disable-nls         \
-#        --disable-rpath       \
-#        --disable-largefile   \
-#        --disable-job-server  \
-#        --disable-load
-#    make -j8
-#    make install
-#fi
-#cd "$AL"
-
-# Install kernel sources
+###############################################################################
+# Install Sources
+###############################################################################
 fetch linux-4.4.tar.xz https://cdn.kernel.org/pub/linux/kernel/v4.x/ "$AL_ROOT/src/linux"
+fetch make-4.1.tar.gz  http://ftp.gnu.org/gnu/make/                  "$AL_ROOT/src/make"
 
+###############################################################################
+# Finalize the Chroot
+###############################################################################
+mkdir -pv "$AL_ROOT/dev"
+mkdir -pv "$AL_ROOT/proc"
+mkdir -pv "$AL_ROOT/sys"
+mkdir -pv "$AL_ROOT/tmp"
+mkdir -pv "$AL_ROOT/root"
+#mkdir -pv "$AL_ROOT/$AL_ROOT"
+#ln -svf /tools "$AL_ROOT/$AL_TOOLS"
