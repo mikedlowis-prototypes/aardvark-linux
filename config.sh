@@ -1,7 +1,6 @@
 ###############################################################################
 # Aardvark Linux Build Config
 ###############################################################################
-
 # Define a variable to point to the root of the project
 export AL=$PWD
 
@@ -22,12 +21,24 @@ export AL_TARBALLS=$AL/tarballs
 # Variable pointing to the sources directory
 export AL_SOURCES=$AL/sources
 
+# Choose the target triple. This will select the prebuilt cross compiler to use.
+export AL_TGT=$(uname -m)-linux-musl
+
+# Options to use for every invocation of make
+export MAKEFLAGS="-j8"
+
 ###############################################################################
 # Build Environment Settings
 ###############################################################################
-
-# Setup the path to use the cross-tools when they're available
-export AL_TGT=$(uname -m)-linux-musl
-
-#
-export PATH=$AL_ROOT/tools/$AL_TGT/bin:$PATH
+# These settings should not have to change from the defaults. They are mainly
+# here for informational purposes.
+export PATH="$AL_TOOLS/bin:$PATH"
+export CC="$AL_TGT-gcc"
+export CXX="$AL_TGT-g++"
+export AR="$AL_TGT-ar"
+export AS="$AL_TGT-as"
+export LD="$AL_TGT-ld"
+export RANLIB="$AL_TGT-ranlib"
+export READELF="$AL_TGT-readelf"
+export STRIP="$AL_TGT-strip"
+export LDFLAGS="--static"

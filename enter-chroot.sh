@@ -11,7 +11,7 @@ mount --rbind /dev "$AL_ROOT/dev"
 mount --make-rslave "$AL_ROOT/dev"
 
 # Setup env variables
-export PATH=/bin:/tools/$AL_TGT/bin
+export PATH=/bin:/tools/bin
 
 # Enter the chroot
 chroot "$AL_ROOT" /bin/sh

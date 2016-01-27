@@ -7,7 +7,7 @@
 #ARCH=mips
 #ARCH=mipsel
 
-CC_BASE_PREFIX=$AL_TOOLS
+CC_BASE_PREFIX=/tmp/
 
 # If you use arm, you may need more fine-tuning:
 # arm hardfloat v7
@@ -20,6 +20,7 @@ CC_BASE_PREFIX=$AL_TOOLS
 #GCC_BOOTSTRAP_CONFFLAGS="--with-arch=armv7-a --with-float=softfp"
 #GCC_CONFFLAGS="--with-arch=armv7-a --with-float=softfp"
 
+GCC_BUILTIN_PREREQS=yes
 MAKEFLAGS=-j8
 
 # Enable this to build the bootstrap gcc (thrown away) without optimization, to reduce build time
