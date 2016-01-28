@@ -56,18 +56,16 @@ gitclone http://git.suckless.org/sbase "$AL_SOURCES/sbase"
 if [ ! -f "$AL_ROOT/bin/ls" ]; then
     cd "$AL_SOURCES/sbase"
     git checkout .
-    git apply ../../patches/sbase-touch-f.diff
+    git apply ../../patches/sbase.diff
     make $MAKEFLAGS CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS"
     make $MAKEFLAGS PREFIX=$AL_ROOT install
-    rm -f "$AL_ROOT/bin/grep"
-    rm -f "$AL_ROOT/bin/tar"
+    #rm -f "$AL_ROOT/bin/grep"
     cd $AL
 fi
 
 # Install ubase
 gitclone http://git.suckless.org/ubase "$AL_SOURCES/ubase"
 if [ ! -f "$AL_ROOT/bin/clear" ]; then
-    echo ubase
     cd "$AL_SOURCES/ubase"
     make $MAKEFLAGS CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS"
     make $MAKEFLAGS PREFIX=$AL_ROOT install
@@ -116,20 +114,6 @@ fi
 #------------------------------------------------------------------------------
 # These packages should be replaced with non-gnu versions when possible
 
-# Install GNU grep
-fetch grep-2.9.tar.xz http://ftp.gnu.org/gnu/grep/ "$AL_SOURCES/grep"
-if [ ! -f "$AL_ROOT/bin/grep" ]; then
-    cd "$AL_SOURCES/grep"
-    ./configure             \
-        LDFLAGS="--static"  \
-        --prefix="$AL_ROOT" \
-        --disable-threads   \
-        --disable-rpath     \
-        --disable-nls
-    make $MAKEFLAGS install
-    cd $AL
-fi
-
 # Install GNU awk
 fetch gawk-4.1.3.tar.xz http://ftp.gnu.org/gnu/gawk/ "$AL_SOURCES/gawk"
 if [ ! -f "$AL_ROOT/bin/gawk" ]; then
@@ -147,16 +131,6 @@ if [ ! -f "$AL_ROOT/bin/gawk" ]; then
     cd $AL
 fi
 
-# Install GNU tar
-fetch tar-1.28.tar.xz http://ftp.gnu.org/gnu/tar/ "$AL_SOURCES/tar"
-if [ ! -f "$AL_ROOT/bin/tar" ]; then
-    cd "$AL_SOURCES/tar"
-    ./configure \
-        --prefix="$AL_ROOT"
-    make $MAKEFLAGS install
-    cd $AL
-fi
-
 # Install GNU diffutils
 fetch diffutils-3.3.tar.xz http://ftp.gnu.org/gnu/diffutils/ "$AL_SOURCES/diffutils"
 if [ ! -f "$AL_ROOT/bin/diff" ]; then
@@ -167,6 +141,29 @@ if [ ! -f "$AL_ROOT/bin/diff" ]; then
     cd $AL
 fi
 
+## Install GNU grep
+#fetch grep-2.9.tar.xz http://ftp.gnu.org/gnu/grep/ "$AL_SOURCES/grep"
+#if [ ! -f "$AL_ROOT/bin/grep" ]; then
+#    cd "$AL_SOURCES/grep"
+#    ./configure             \
+#        LDFLAGS="--static"  \
+#        --prefix="$AL_ROOT" \
+#        --disable-threads   \
+#        --disable-rpath     \
+#        --disable-nls
+#    make $MAKEFLAGS install
+#    cd $AL
+#fi
+
+# Install GNU tar
+#fetch tar-1.28.tar.xz http://ftp.gnu.org/gnu/tar/ "$AL_SOURCES/tar"
+#if [ ! -f "$AL_ROOT/bin/tar" ]; then
+#    cd "$AL_SOURCES/tar"
+#    ./configure \
+#        --prefix="$AL_ROOT"
+#    make $MAKEFLAGS install
+#    cd $AL
+#fi
 
 ## Install GNU make
 #fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_SOURCES/make"
