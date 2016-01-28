@@ -9,9 +9,10 @@ mount --rbind /sys "$AL_ROOT/sys"
 mount --make-rslave "$AL_ROOT/sys"
 mount --rbind /dev "$AL_ROOT/dev"
 mount --make-rslave "$AL_ROOT/dev"
+cp -L /etc/resolv.conf "$AL_ROOT/etc/"
 
 # Setup env variables
-export PATH=/bin:/tools/bin
+export PATH=/pkg/sbin:/pkg/bin:/bin:/tools/bin
 export MAKEFLAGS=
 
 # Enter the chroot

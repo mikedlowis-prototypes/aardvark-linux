@@ -60,6 +60,7 @@ if [ ! -f "$AL_ROOT/bin/ls" ]; then
     make $MAKEFLAGS CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS"
     make $MAKEFLAGS PREFIX=$AL_ROOT install
     rm -f "$AL_ROOT/bin/grep"
+    rm -f "$AL_ROOT/bin/tar"
     cd $AL
 fi
 
@@ -86,6 +87,34 @@ if [ ! -f "$AL_ROOT/bin/mksh" ]; then
     ln -svf mksh "$AL_ROOT/bin/sh"
     cd $AL
 fi
+
+# Install shadow
+fetch shadow-4.2.1.tar.xz http://pkg-shadow.alioth.debian.org/releases/ "$AL_SOURCES/shadow"
+if [ ! -f "$AL_ROOT/bin/groups" ]; then
+    cd "$AL_SOURCES/shadow"
+    ./configure             \
+        LDFLAGS="--static"  \
+        --prefix="$AL_ROOT" \
+        --exec-prefix="$AL_ROOT" \
+        --sysconfdir="$AL_ROOT/etc"   \
+        --with-group-name-max-length=32
+    make $MAKEFLAGS install
+    sed -i 's/yes/no/; s/bash/sh/' "$AL_ROOT/etc/default/useradd"
+    cd $AL
+fi
+
+# Install Iana-Etc files
+fetch iana-etc-2.30.tar.bz2 http://anduin.linuxfromscratch.org/sources/LFS/lfs-packages/conglomeration/iana-etc/ "$AL_SOURCES/iana-etc"
+if [ ! -f "$AL_ROOT/etc/services" ]; then
+    cd "$AL_SOURCES/iana-etc"
+    make PREFIX="$AL_ROOT" install
+    cd $AL
+fi
+
+#------------------------------------------------------------------------------
+# Install GNU packages
+#------------------------------------------------------------------------------
+# These packages should be replaced with non-gnu versions when possible
 
 # Install GNU grep
 fetch grep-2.9.tar.xz http://ftp.gnu.org/gnu/grep/ "$AL_SOURCES/grep"
@@ -118,18 +147,13 @@ if [ ! -f "$AL_ROOT/bin/gawk" ]; then
     cd $AL
 fi
 
-# Install shadow
-fetch shadow-4.2.1.tar.xz http://pkg-shadow.alioth.debian.org/releases/ "$AL_SOURCES/shadow"
-if [ ! -f "$AL_ROOT/bin/groups" ]; then
-    cd "$AL_SOURCES/shadow"
-    ./configure             \
-        LDFLAGS="--static"  \
-        --prefix="$AL_ROOT" \
-        --exec-prefix="$AL_ROOT" \
-        --sysconfdir="$AL_ROOT/etc"   \
-        --with-group-name-max-length=32
+# Install GNU tar
+fetch tar-1.28.tar.xz http://ftp.gnu.org/gnu/tar/ "$AL_SOURCES/tar"
+if [ ! -f "$AL_ROOT/bin/tar" ]; then
+    cd "$AL_SOURCES/tar"
+    ./configure \
+        --prefix="$AL_ROOT"
     make $MAKEFLAGS install
-    sed -i 's/yes/no/; s/bash/sh/' "$AL_ROOT/etc/default/useradd"
     cd $AL
 fi
 
@@ -142,6 +166,7 @@ if [ ! -f "$AL_ROOT/bin/diff" ]; then
     make $MAKEFLAGS install
     cd $AL
 fi
+
 
 ## Install GNU make
 #fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_SOURCES/make"
@@ -156,12 +181,19 @@ fi
 #fi
 
 
-## Install GNU inetutils
+# Install GNU inetutils
 #fetch inetutils-1.9.4.tar.xz http://ftp.gnu.org/gnu/inetutils/ "$AL_SOURCES/inetutils"
-#if [ ! -f "$AL_ROOT/bin/diff" ]; then
+#if [ ! -f "$AL_ROOT/bin/ping" ]; then
 #    cd "$AL_SOURCES/inetutils"
-#    ./configure \
-#        --prefix="$AL_ROOT"
+#    ./configure              \
+#        --prefix="$AL_ROOT"  \
+#        --localstatedir=/var \
+#        --disable-logger     \
+#        --disable-rcp        \
+#        --disable-rexec      \
+#        --disable-rlogin     \
+#        --disable-rsh        \
+#        --disable-servers
 #    make $MAKEFLAGS install
 #    cd $AL
 #fi
@@ -261,4 +293,4 @@ ln -sfv "$AL_TGT-readelf"    "$AL_TOOLS/bin/readelf"
 ln -sfv "$AL_TGT-size"       "$AL_TOOLS/bin/size"
 ln -sfv "$AL_TGT-strings"    "$AL_TOOLS/bin/strings"
 ln -sfv "$AL_TGT-strip"      "$AL_TOOLS/bin/strip"
-
+#strip $AL_ROOT/bin/*
