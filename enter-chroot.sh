@@ -12,6 +12,7 @@ mount --make-rslave "$AL_ROOT/dev"
 
 # Setup env variables
 export PATH=/bin:/tools/bin
+export MAKEFLAGS=
 
 # Enter the chroot
 chroot "$AL_ROOT" /bin/sh

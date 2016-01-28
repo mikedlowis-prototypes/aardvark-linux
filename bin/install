@@ -1,0 +1,110 @@
+#!/bin/sh
+
+# Print the usage and exit
+function usage(){
+    echo "Usage: install [OPTION]... [-T] SOURCE DEST"
+    echo "  or:  install [OPTION]... SOURCE... DIRECTORY"
+    echo "  or:  install [OPTION]... -t DIRECTORY SOURCE..."
+    echo "  or:  install [OPTION]... -d DIRECTORY..."
+    exit 1
+}
+
+# Global flags that affect behavior
+dirmode=0
+mkdirmode=0
+group=
+mode=
+owner=
+sources=
+destination=
+
+echo "Install received the following command line:"
+echo "    $@"
+# Parse command-line args
+while getopts bcCdDg:m:o:psS:t:Tv name; do
+    case $name in
+        d) dirmode=1 ;;
+        D) mkdirmode=1 ;;
+        g) group="$OPTARG" ;;
+        m) owner="$OPTARG" ;;
+        o) mode="$OPTARG" ;;
+
+        # Unsupported for  now
+        t) destination="$OPTARG" ;;
+
+        # These options don't do anything
+        p) ;;
+        b) ;;
+        c) ;;
+        C) ;;
+        s) ;;
+        S) ;;
+        T) ;;
+        v) ;;
+        Z) ;;
+
+        # Catch all errors and report them
+        ?) usage;;
+    esac
+done
+# remove the parsed flags from the positional arguments array
+shift $((OPTIND-1))
+
+if [ $dirmode -ne 1 ]; then
+    # Normal mode requires at least two positional args
+    if [ "$destination" == "" ] && [ $# -lt 2 ]; then
+        usage
+    fi
+fi
+
+# All forms require at least one positional arg
+if [ "$destination" != "" ] && [ $# -lt 1 ]; then
+    usage
+fi
+
+#------------------------------------------------------------------------------
+# Helper Functions
+#------------------------------------------------------------------------------
+function setgroup(){
+    if [ "$group" != "" ]; then
+        chgrp "$group" "$@"
+    fi
+}
+
+function setmode(){
+    if [ "$mode" != "" ]; then
+        chmod "$mode" "$@"
+    fi
+}
+
+function setowner(){
+    if [ "$owner" != "" ]; then
+        chown "$owner" "$@"
+    fi
+}
+
+#------------------------------------------------------------------------------
+# Main Routine
+#------------------------------------------------------------------------------
+if [ $dirmode -eq 1 ]; then
+    while [ $# -gt 0 ]; do
+        mkdir -p $1
+        shift
+    done
+else
+    # Decide if the last arg is the target dir or a source
+    stopcount=1
+    if [ "$destination" != "" ]; then
+        stopcount=0
+    fi
+    # get the sources
+    while [ $# -gt $stopcount ]; do
+        sources="$sources $1"
+        shift
+    done
+    if [ $# -eq  1 ]; then
+        destination="$1"
+    fi
+    cp $sources $destination
+fi
+

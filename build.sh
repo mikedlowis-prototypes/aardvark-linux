@@ -38,11 +38,25 @@ fetch crossx86-x86_64-linux-musl-1.1.12.tar.xz \
       https://e82b27f594c813a5a4ea5b07b06f16c3777c3b8c.googledrive.com/host/0BwnS5DMB0YQ6bDhPZkpOYVFhbk0/musl-1.1.12/ \
       "$AL_TOOLS"
 rm -f "$AL_TOOLS/$AL_TGT/lib/libc.so"
+[ ! -L "$AL_ROOT/sbin" ] && ln -sfv bin "$AL_ROOT/sbin"
+[ ! -L "$AL_ROOT/usr" ] && ln -sfv . "$AL_ROOT/usr"
+mkdir -pv "$AL_ROOT/bin"
+mkdir -pv "$AL_ROOT/dev"
+mkdir -pv "$AL_ROOT/etc"
+mkdir -pv "$AL_ROOT/proc"
+mkdir -pv "$AL_ROOT/sys"
+mkdir -pv "$AL_ROOT/tmp"
+mkdir -pv "$AL_ROOT/root"
+mkdir -pv "$AL_ROOT/var"
+cp etc/* "$AL_ROOT/etc/"
+cp bin/* "$AL_ROOT/bin/"
 
 # Install sbase
 gitclone http://git.suckless.org/sbase "$AL_SOURCES/sbase"
 if [ ! -f "$AL_ROOT/bin/ls" ]; then
     cd "$AL_SOURCES/sbase"
+    git checkout .
+    git apply ../../patches/sbase-touch-f.diff
     make $MAKEFLAGS CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS"
     make $MAKEFLAGS PREFIX=$AL_ROOT install
     rm -f "$AL_ROOT/bin/grep"
@@ -104,17 +118,53 @@ if [ ! -f "$AL_ROOT/bin/gawk" ]; then
     cd $AL
 fi
 
-# Install GNU make
-fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_SOURCES/make"
-if [ ! -f "$AL_ROOT/bin/make" ]; then
-    cd "$AL_SOURCES/make"
-    ./configure              \
-        LDFLAGS="--static"   \
-        --prefix="$AL_ROOT"  \
-        --without-guile
+# Install shadow
+fetch shadow-4.2.1.tar.xz http://pkg-shadow.alioth.debian.org/releases/ "$AL_SOURCES/shadow"
+if [ ! -f "$AL_ROOT/bin/groups" ]; then
+    cd "$AL_SOURCES/shadow"
+    ./configure             \
+        LDFLAGS="--static"  \
+        --prefix="$AL_ROOT" \
+        --exec-prefix="$AL_ROOT" \
+        --sysconfdir="$AL_ROOT/etc"   \
+        --with-group-name-max-length=32
+    make $MAKEFLAGS install
+    sed -i 's/yes/no/; s/bash/sh/' "$AL_ROOT/etc/default/useradd"
+    cd $AL
+fi
+
+# Install GNU diffutils
+fetch diffutils-3.3.tar.xz http://ftp.gnu.org/gnu/diffutils/ "$AL_SOURCES/diffutils"
+if [ ! -f "$AL_ROOT/bin/diff" ]; then
+    cd "$AL_SOURCES/diffutils"
+    ./configure \
+        --prefix="$AL_ROOT"
     make $MAKEFLAGS install
     cd $AL
 fi
+
+## Install GNU make
+#fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_SOURCES/make"
+#if [ ! -f "$AL_ROOT/bin/make" ]; then
+#    cd "$AL_SOURCES/make"
+#    ./configure              \
+#        LDFLAGS="--static"   \
+#        --prefix="$AL_ROOT"  \
+#        --without-guile
+#    make $MAKEFLAGS install
+#    cd $AL
+#fi
+
+
+## Install GNU inetutils
+#fetch inetutils-1.9.4.tar.xz http://ftp.gnu.org/gnu/inetutils/ "$AL_SOURCES/inetutils"
+#if [ ! -f "$AL_ROOT/bin/diff" ]; then
+#    cd "$AL_SOURCES/inetutils"
+#    ./configure \
+#        --prefix="$AL_ROOT"
+#    make $MAKEFLAGS install
+#    cd $AL
+#fi
 
 ## Install GNU bc
 #fetch bc-1.06.tar.gz http://ftp.gnu.org/gnu/bc/ "$AL_SOURCES/bc"
@@ -154,7 +204,7 @@ fi
 #    cd $AL
 #fi
 #/tools/bin/../lib/gcc/x86_64-linux-musl/5.3.0/include
-
+#
 ## Install Perl
 #fetch perl-5.22.0.tar.bz2 http://www.cpan.org/src/5.0/ "$AL_SOURCES/perl"
 #if [ ! -f "$AL_ROOT/bin/perl" ]; then
@@ -167,13 +217,15 @@ fi
 ###############################################################################
 # Install Sources
 ###############################################################################
-fetch    musl-1.1.12.tar.gz  http://www.musl-libc.org/releases/            "$AL_ROOT/src/musl"
-gitclone                     http://git.suckless.org/sbase                 "$AL_ROOT/src/sbase"
-gitclone                     http://git.suckless.org/ubase                 "$AL_ROOT/src/ubase"
-fetch    mksh-R52b.tgz       https://www.mirbsd.org/MirOS/dist/mir/mksh/   "$AL_ROOT/src/mksh"
-fetch    make-4.1.tar.gz     http://ftp.gnu.org/gnu/make/                  "$AL_ROOT/src/make"
-fetch    grep-2.9.tar.xz     http://ftp.gnu.org/gnu/grep/                  "$AL_ROOT/src/grep"
-fetch    gawk-4.1.3.tar.xz   http://ftp.gnu.org/gnu/gawk/                  "$AL_ROOT/src/gawk"
+fetch    pkgsrc.tar.bz2      http://ftp.netbsd.org/pub/pkgsrc/stable/      "$AL_ROOT/pkgsrc/"
+
+#fetch    musl-1.1.12.tar.gz  http://www.musl-libc.org/releases/            "$AL_ROOT/src/musl"
+#gitclone                     http://git.suckless.org/sbase                 "$AL_ROOT/src/sbase"
+#gitclone                     http://git.suckless.org/ubase                 "$AL_ROOT/src/ubase"
+#fetch    mksh-R52b.tgz       https://www.mirbsd.org/MirOS/dist/mir/mksh/   "$AL_ROOT/src/mksh"
+#fetch    make-4.1.tar.gz     http://ftp.gnu.org/gnu/make/                  "$AL_ROOT/src/make"
+#fetch    grep-2.9.tar.xz     http://ftp.gnu.org/gnu/grep/                  "$AL_ROOT/src/grep"
+#fetch    gawk-4.1.3.tar.xz   http://ftp.gnu.org/gnu/gawk/                  "$AL_ROOT/src/gawk"
 #fetch    bc-1.06.tar.gz      http://ftp.gnu.org/gnu/bc/                    "$AL_ROOT/src/bc"
 #fetch    gzip-1.6.tar.xz     http://ftp.gnu.org/gnu/gzip/                  "$AL_ROOT/src/gzip"
 #fetch    ncurses-6.0.tar.gz  http://ftp.gnu.org/gnu/ncurses/               "$AL_ROOT/src/ncurses"
@@ -183,11 +235,6 @@ fetch    gawk-4.1.3.tar.xz   http://ftp.gnu.org/gnu/gawk/                  "$AL_
 ###############################################################################
 # Finalize the Chroot
 ###############################################################################
-mkdir -pv "$AL_ROOT/dev"
-mkdir -pv "$AL_ROOT/proc"
-mkdir -pv "$AL_ROOT/sys"
-mkdir -pv "$AL_ROOT/tmp"
-mkdir -pv "$AL_ROOT/root"
 ln -sfv "$AL_TGT-addr2line"  "$AL_TOOLS/bin/addr2line"
 ln -sfv "$AL_TGT-ar"         "$AL_TOOLS/bin/ar"
 ln -sfv "$AL_TGT-as"         "$AL_TOOLS/bin/as"

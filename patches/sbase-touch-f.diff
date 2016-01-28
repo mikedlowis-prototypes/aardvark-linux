@@ -1,0 +1,13 @@
+diff --git a/touch.c b/touch.c
+index b957fa5..4217dfb 100644
+--- a/touch.c
++++ b/touch.c
+@@ -146,6 +146,8 @@ main(int argc, char *argv[])
+ 	case 'T':
+ 		times[0].tv_sec = estrtonum(EARGF(usage()), 0, LLONG_MAX);
+ 		break;
++	case 'f':
++	    break;
+ 	default:
+ 		usage();
+ 	} ARGEND
