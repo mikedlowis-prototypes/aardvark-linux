@@ -30,16 +30,24 @@ gitclone(){
     fi
 }
 
+symlink(){
+    target=$1
+    dest=$2
+    if [ ! -L "$dest" ]; then
+        ln -sfv "$target" "$dest"
+    fi
+}
+
 ###############################################################################
-# Install the Base Packages
+# Install the Toolchain
 ###############################################################################
 # Fetch the prebuilt cross compiler
 fetch crossx86-x86_64-linux-musl-1.1.12.tar.xz \
       https://e82b27f594c813a5a4ea5b07b06f16c3777c3b8c.googledrive.com/host/0BwnS5DMB0YQ6bDhPZkpOYVFhbk0/musl-1.1.12/ \
       "$AL_TOOLS"
-rm -f "$AL_TOOLS/$AL_TGT/lib/libc.so"
-[ ! -L "$AL_ROOT/sbin" ] && ln -sfv bin "$AL_ROOT/sbin"
-[ ! -L "$AL_ROOT/usr" ] && ln -sfv . "$AL_ROOT/usr"
+rm -f "$AL_TOOLS/x86_64-linux-musl/lib/libc.so"
+#symlink bin "$AL_ROOT/sbin"
+#symlink .   "$AL_ROOT/usr"
 mkdir -pv "$AL_ROOT/bin"
 mkdir -pv "$AL_ROOT/dev"
 mkdir -pv "$AL_ROOT/etc"
@@ -51,6 +59,52 @@ mkdir -pv "$AL_ROOT/var"
 cp etc/* "$AL_ROOT/etc/"
 cp bin/* "$AL_ROOT/bin/"
 
+# Install musl
+fetch musl-1.1.12.tar.gz http://www.musl-libc.org/releases/ "$AL_ROOT/src/musl"
+if [ ! -f "$AL_ROOT/lib/libc.a" ]; then
+    cd "$AL_ROOT/src/musl"
+    ./configure --prefix="$AL_ROOT"
+    make $MAKEFLAGS install
+    make clean
+    cd $AL
+fi
+
+# Install pcc
+gitclone https://github.com/antoineL/pcc.git "$AL_ROOT/src/pcc"
+if [ ! -f "$AL_ROOT/bin/cc" ]; then
+    cd "$AL_ROOT/src/pcc/"
+    cp "$AL/cc.c" "$AL_ROOT/src/pcc/cc/cc/"
+    cp "$AL/ccconfig.h" "$AL_ROOT/src/pcc/os/linux/"
+    ./configure                      \
+        --prefix="$AL_ROOT"          \
+        --exec-prefix="$AL_ROOT"     \
+        --sbindir="$AL_ROOT/bin"     \
+        --libexecdir="$AL_ROOT/bin"  \
+        --with-libdir="/lib"         \
+        --enable-native
+    make $MAKEFLAGS
+    make install
+    cp cc/cc/cc "$AL_ROOT/bin"
+    chmod 755 "$AL_ROOT/bin/cc"
+    cd $AL
+fi
+
+# Install binutils
+fetch binutils-2.25.tar.bz2 http://ftp.gnu.org/gnu/binutils/ "$AL_ROOT/src/binutils"
+if [ ! -f "$AL_ROOT/bin/as" ]; then
+    cd "$AL_ROOT/src/binutils/"
+    ./configure \
+        --prefix="$AL_ROOT"       \
+        --exec-prefix="$AL_ROOT"  \
+        --disable-shared
+    make $MAKEFLAGS
+    make install
+    cd $AL
+fi
+
+###############################################################################
+# Install the Base Packages
+###############################################################################
 # Install sbase
 gitclone http://git.suckless.org/sbase "$AL_SOURCES/sbase"
 if [ ! -f "$AL_ROOT/bin/ls" ]; then
@@ -59,7 +113,6 @@ if [ ! -f "$AL_ROOT/bin/ls" ]; then
     git apply ../../patches/sbase.diff
     make $MAKEFLAGS CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS"
     make $MAKEFLAGS PREFIX=$AL_ROOT install
-    #rm -f "$AL_ROOT/bin/grep"
     cd $AL
 fi
 
@@ -94,6 +147,7 @@ if [ ! -f "$AL_ROOT/bin/groups" ]; then
         LDFLAGS="--static"  \
         --prefix="$AL_ROOT" \
         --exec-prefix="$AL_ROOT" \
+        --sbindir="$AL_ROOT/bin" \
         --sysconfdir="$AL_ROOT/etc"   \
         --with-group-name-max-length=32
     make $MAKEFLAGS install
@@ -141,153 +195,45 @@ if [ ! -f "$AL_ROOT/bin/diff" ]; then
     cd $AL
 fi
 
-## Install GNU grep
-#fetch grep-2.9.tar.xz http://ftp.gnu.org/gnu/grep/ "$AL_SOURCES/grep"
-#if [ ! -f "$AL_ROOT/bin/grep" ]; then
-#    cd "$AL_SOURCES/grep"
-#    ./configure             \
-#        LDFLAGS="--static"  \
-#        --prefix="$AL_ROOT" \
-#        --disable-threads   \
-#        --disable-rpath     \
-#        --disable-nls
-#    make $MAKEFLAGS install
-#    cd $AL
-#fi
-
-# Install GNU tar
-#fetch tar-1.28.tar.xz http://ftp.gnu.org/gnu/tar/ "$AL_SOURCES/tar"
-#if [ ! -f "$AL_ROOT/bin/tar" ]; then
-#    cd "$AL_SOURCES/tar"
-#    ./configure \
-#        --prefix="$AL_ROOT"
-#    make $MAKEFLAGS install
-#    cd $AL
-#fi
-
-## Install GNU make
-#fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_SOURCES/make"
-#if [ ! -f "$AL_ROOT/bin/make" ]; then
-#    cd "$AL_SOURCES/make"
-#    ./configure              \
-#        LDFLAGS="--static"   \
-#        --prefix="$AL_ROOT"  \
-#        --without-guile
-#    make $MAKEFLAGS install
-#    cd $AL
-#fi
-
-
-# Install GNU inetutils
-#fetch inetutils-1.9.4.tar.xz http://ftp.gnu.org/gnu/inetutils/ "$AL_SOURCES/inetutils"
-#if [ ! -f "$AL_ROOT/bin/ping" ]; then
-#    cd "$AL_SOURCES/inetutils"
-#    ./configure              \
-#        --prefix="$AL_ROOT"  \
-#        --localstatedir=/var \
-#        --disable-logger     \
-#        --disable-rcp        \
-#        --disable-rexec      \
-#        --disable-rlogin     \
-#        --disable-rsh        \
-#        --disable-servers
-#    make $MAKEFLAGS install
-#    cd $AL
-#fi
-
-## Install GNU bc
-#fetch bc-1.06.tar.gz http://ftp.gnu.org/gnu/bc/ "$AL_SOURCES/bc"
-#if [ ! -f "$AL_ROOT/bin/bc" ]; then
-#    cd "$AL_SOURCES/bc"
-#    ./configure              \
-#        LDFLAGS="--static"   \
-#        --prefix="$AL_ROOT"
-#    make $MAKEFLAGS install
-#    cd $AL
-#fi
-#
-## Install GNU gzip
-#fetch gzip-1.6.tar.xz http://ftp.gnu.org/gnu/gzip/ "$AL_SOURCES/gzip"
-#if [ ! -f "$AL_ROOT/bin/gzip" ]; then
-#    cd "$AL_SOURCES/gzip"
-#    ./configure              \
-#        LDFLAGS="--static"   \
-#        --prefix="$AL_ROOT"
-#    make $MAKEFLAGS install
-#    cd $AL
-#fi
-#
-## Install GNU ncurses
-#fetch ncurses-6.0.tar.gz http://ftp.gnu.org/gnu/ncurses/ "$AL_SOURCES/ncurses"
-#if [ ! -f "$AL_ROOT/lib/ncurses" ]; then
-#    cd "$AL_SOURCES/ncurses"
-#    ./configure              \
-#        LDFLAGS="--static"   \
-#        --prefix="$AL_TOOLS/lib/gcc/$AL_TGT/5.3.0"  \
-#        --without-shared     \
-#        --without-debug      \
-#        --without-ada        \
-#        --enable-widec       \
-#        --enable-overwrite
-#    make $MAKEFLAGS install
-#    cd $AL
-#fi
-#/tools/bin/../lib/gcc/x86_64-linux-musl/5.3.0/include
-#
-## Install Perl
-#fetch perl-5.22.0.tar.bz2 http://www.cpan.org/src/5.0/ "$AL_SOURCES/perl"
-#if [ ! -f "$AL_ROOT/bin/perl" ]; then
-#    cd "$AL_SOURCES/perl"
-#    ./Configure -des -Dprefix="$AL_ROOT"
-#    make $MAKEFLAGS
-#    cd $AL
-#fi
-
-###############################################################################
-# Install Sources
-###############################################################################
-fetch    pkgsrc.tar.bz2      http://ftp.netbsd.org/pub/pkgsrc/stable/      "$AL_ROOT/pkgsrc/"
-
-#fetch    musl-1.1.12.tar.gz  http://www.musl-libc.org/releases/            "$AL_ROOT/src/musl"
-#gitclone                     http://git.suckless.org/sbase                 "$AL_ROOT/src/sbase"
-#gitclone                     http://git.suckless.org/ubase                 "$AL_ROOT/src/ubase"
-#fetch    mksh-R52b.tgz       https://www.mirbsd.org/MirOS/dist/mir/mksh/   "$AL_ROOT/src/mksh"
-#fetch    make-4.1.tar.gz     http://ftp.gnu.org/gnu/make/                  "$AL_ROOT/src/make"
-#fetch    grep-2.9.tar.xz     http://ftp.gnu.org/gnu/grep/                  "$AL_ROOT/src/grep"
-#fetch    gawk-4.1.3.tar.xz   http://ftp.gnu.org/gnu/gawk/                  "$AL_ROOT/src/gawk"
-#fetch    bc-1.06.tar.gz      http://ftp.gnu.org/gnu/bc/                    "$AL_ROOT/src/bc"
-#fetch    gzip-1.6.tar.xz     http://ftp.gnu.org/gnu/gzip/                  "$AL_ROOT/src/gzip"
-#fetch    ncurses-6.0.tar.gz  http://ftp.gnu.org/gnu/ncurses/               "$AL_ROOT/src/ncurses"
-#fetch    perl-5.22.0.tar.bz2 http://www.cpan.org/src/5.0/                  "$AL_ROOT/src/perl"
-#fetch    linux-4.4.tar.xz    https://cdn.kernel.org/pub/linux/kernel/v4.x/ "$AL_ROOT/src/linux"
+# Install GNU make
+fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_SOURCES/make"
+if [ ! -f "$AL_ROOT/bin/make" ]; then
+    cd "$AL_SOURCES/make"
+    ./configure              \
+        LDFLAGS="--static"   \
+        --prefix="$AL_ROOT"  \
+        --without-guile
+    make $MAKEFLAGS install
+    cd $AL
+fi
 
 ###############################################################################
 # Finalize the Chroot
 ###############################################################################
-ln -sfv "$AL_TGT-addr2line"  "$AL_TOOLS/bin/addr2line"
-ln -sfv "$AL_TGT-ar"         "$AL_TOOLS/bin/ar"
-ln -sfv "$AL_TGT-as"         "$AL_TOOLS/bin/as"
-ln -sfv "$AL_TGT-c++"        "$AL_TOOLS/bin/c++"
-ln -sfv "$AL_TGT-c++filt"    "$AL_TOOLS/bin/c++filt"
-ln -sfv "$AL_TGT-cpp"        "$AL_TOOLS/bin/cpp"
-ln -sfv "$AL_TGT-elfedit"    "$AL_TOOLS/bin/elfedit"
-ln -sfv "$AL_TGT-g++"        "$AL_TOOLS/bin/g++"
-ln -sfv "$AL_TGT-gcc"        "$AL_TOOLS/bin/gcc"
-ln -sfv "$AL_TGT-gcc-5.3.0"  "$AL_TOOLS/bin/gcc-5.3.0"
-ln -sfv "$AL_TGT-gcc-ar"     "$AL_TOOLS/bin/gcc-ar"
-ln -sfv "$AL_TGT-gcc-nm"     "$AL_TOOLS/bin/gcc-nm"
-ln -sfv "$AL_TGT-gcc-ranlib" "$AL_TOOLS/bin/gcc-ranlib"
-ln -sfv "$AL_TGT-gcov"       "$AL_TOOLS/bin/gcov"
-ln -sfv "$AL_TGT-gcov-tool"  "$AL_TOOLS/bin/gcov-tool"
-ln -sfv "$AL_TGT-gprof"      "$AL_TOOLS/bin/gprof"
-ln -sfv "$AL_TGT-ld"         "$AL_TOOLS/bin/ld"
-ln -sfv "$AL_TGT-ld.bfd"     "$AL_TOOLS/bin/ld.bfd"
-ln -sfv "$AL_TGT-nm"         "$AL_TOOLS/bin/nm"
-ln -sfv "$AL_TGT-objcopy"    "$AL_TOOLS/bin/objcopy"
-ln -sfv "$AL_TGT-objdump"    "$AL_TOOLS/bin/objdump"
-ln -sfv "$AL_TGT-ranlib"     "$AL_TOOLS/bin/ranlib"
-ln -sfv "$AL_TGT-readelf"    "$AL_TOOLS/bin/readelf"
-ln -sfv "$AL_TGT-size"       "$AL_TOOLS/bin/size"
-ln -sfv "$AL_TGT-strings"    "$AL_TOOLS/bin/strings"
-ln -sfv "$AL_TGT-strip"      "$AL_TOOLS/bin/strip"
-#strip $AL_ROOT/bin/*
+#rm -r "$AL_TOOLS"
+#symlink "$AL_TGT-addr2line"  "$AL_TOOLS/bin/addr2line"
+#symlink "$AL_TGT-ar"         "$AL_TOOLS/bin/ar"
+#symlink "$AL_TGT-as"         "$AL_TOOLS/bin/as"
+#symlink "$AL_TGT-c++"        "$AL_TOOLS/bin/c++"
+#symlink "$AL_TGT-c++filt"    "$AL_TOOLS/bin/c++filt"
+#symlink "$AL_TGT-cpp"        "$AL_TOOLS/bin/cpp"
+#symlink "$AL_TGT-elfedit"    "$AL_TOOLS/bin/elfedit"
+#symlink "$AL_TGT-g++"        "$AL_TOOLS/bin/g++"
+#symlink "$AL_TGT-gcc"        "$AL_TOOLS/bin/gcc"
+#symlink "$AL_TGT-gcc-5.3.0"  "$AL_TOOLS/bin/gcc-5.3.0"
+#symlink "$AL_TGT-gcc-ar"     "$AL_TOOLS/bin/gcc-ar"
+#symlink "$AL_TGT-gcc-nm"     "$AL_TOOLS/bin/gcc-nm"
+#symlink "$AL_TGT-gcc-ranlib" "$AL_TOOLS/bin/gcc-ranlib"
+#symlink "$AL_TGT-gcov"       "$AL_TOOLS/bin/gcov"
+#symlink "$AL_TGT-gcov-tool"  "$AL_TOOLS/bin/gcov-tool"
+#symlink "$AL_TGT-gprof"      "$AL_TOOLS/bin/gprof"
+#symlink "$AL_TGT-ld"         "$AL_TOOLS/bin/ld"
+#symlink "$AL_TGT-ld.bfd"     "$AL_TOOLS/bin/ld.bfd"
+#symlink "$AL_TGT-nm"         "$AL_TOOLS/bin/nm"
+#symlink "$AL_TGT-objcopy"    "$AL_TOOLS/bin/objcopy"
+#symlink "$AL_TGT-objdump"    "$AL_TOOLS/bin/objdump"
+#symlink "$AL_TGT-ranlib"     "$AL_TOOLS/bin/ranlib"
+#symlink "$AL_TGT-readelf"    "$AL_TOOLS/bin/readelf"
+#symlink "$AL_TGT-size"       "$AL_TOOLS/bin/size"
+#symlink "$AL_TGT-strings"    "$AL_TOOLS/bin/strings"
+#symlink "$AL_TGT-strip"      "$AL_TOOLS/bin/strip"
