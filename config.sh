@@ -13,7 +13,7 @@ export LANGUAGE=$LC_ALL
 export AL_ROOT=$AL/root
 
 # Variable pointing to the toolchain directory
-export AL_TOOLS=$AL_ROOT/tools
+export AL_TOOLS=$AL/tools
 
 # Variable pointing to the tarballs directory
 export AL_TARBALLS=$AL/tarballs
@@ -25,7 +25,7 @@ export AL_SOURCES=$AL/sources
 export AL_TGT=$(uname -m)-linux-musl
 
 # Options to use for every invocation of make
-export MAKEFLAGS="-j8"
+export MAKEFLAGS="-j4"
 
 ###############################################################################
 # Build Environment Settings

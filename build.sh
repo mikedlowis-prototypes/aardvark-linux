@@ -16,6 +16,7 @@ fetch(){
     if [ ! -d "$3" ]; then
         mkdir -p "$AL_SOURCES"
         if [ ! -f "$AL_SOURCES/$1" ]; then
+            echo fetching "$2/$1"
             echo curl -L --retry 5 "$2/$1" > "$AL_SOURCES/$1"
             curl -L --retry 5 "$2/$1" > "$AL_SOURCES/$1"
         fi
@@ -63,7 +64,7 @@ cp bin/* "$AL_ROOT/bin/"
 fetch musl-1.1.12.tar.gz http://www.musl-libc.org/releases/ "$AL_ROOT/src/musl"
 if [ ! -f "$AL_ROOT/lib/libc.a" ]; then
     cd "$AL_ROOT/src/musl"
-    ./configure --prefix="$AL_ROOT"
+    ./configure --prefix="$AL_ROOT" --disable-shared
     make $MAKEFLAGS install
     make clean
     cd $AL
@@ -86,6 +87,7 @@ if [ ! -f "$AL_ROOT/bin/cc" ]; then
     make install
     cp cc/cc/cc "$AL_ROOT/bin"
     chmod 755 "$AL_ROOT/bin/cc"
+    make clean
     cd $AL
 fi
 
@@ -99,6 +101,20 @@ if [ ! -f "$AL_ROOT/bin/as" ]; then
         --disable-shared
     make $MAKEFLAGS
     make install
+    make clean
+    cd $AL
+fi
+
+# Install byacc
+fetch byacc.tar.gz http://invisible-island.net/datafiles/release/ "$AL_ROOT/src/byacc"
+if [ ! -f "$AL_ROOT/bin/yacc" ]; then
+    cd "$AL_ROOT/src/byacc/"
+    ./configure \
+        --prefix="$AL_ROOT"      \
+        --exec-prefix="$AL_ROOT"
+    make $MAKEFLAGS
+    make install
+    make clean
     cd $AL
 fi
 
@@ -106,29 +122,31 @@ fi
 # Install the Base Packages
 ###############################################################################
 # Install sbase
-gitclone http://git.suckless.org/sbase "$AL_SOURCES/sbase"
+gitclone http://git.suckless.org/sbase "$AL_ROOT/src/sbase"
 if [ ! -f "$AL_ROOT/bin/ls" ]; then
-    cd "$AL_SOURCES/sbase"
+    cd "$AL_ROOT/src/sbase"
     git checkout .
-    git apply ../../patches/sbase.diff
+    #git apply ../../../patches/sbase.diff
     make $MAKEFLAGS CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS"
     make $MAKEFLAGS PREFIX=$AL_ROOT install
+    make clean
     cd $AL
 fi
 
 # Install ubase
-gitclone http://git.suckless.org/ubase "$AL_SOURCES/ubase"
+gitclone http://git.suckless.org/ubase "$AL_ROOT/src/ubase"
 if [ ! -f "$AL_ROOT/bin/clear" ]; then
-    cd "$AL_SOURCES/ubase"
+    cd "$AL_ROOT/src/ubase"
     make $MAKEFLAGS CC="$CC" LD="$LD" LDFLAGS="$LDFLAGS"
     make $MAKEFLAGS PREFIX=$AL_ROOT install
+    make clean
     cd $AL
 fi
 
 # Install mksh
-fetch mksh-R52b.tgz https://www.mirbsd.org/MirOS/dist/mir/mksh/ "$AL_SOURCES/mksh"
+fetch mksh-R52b.tgz https://www.mirbsd.org/MirOS/dist/mir/mksh/ "$AL_ROOT/src/mksh"
 if [ ! -f "$AL_ROOT/bin/mksh" ]; then
-    cd "$AL_SOURCES/mksh"
+    cd "$AL_ROOT/src/mksh"
     chmod +x Build.sh
     ./Build.sh
     mkdir -p "$AL_ROOT/etc/" "$AL_ROOT/share/doc/mksh/examples"
@@ -140,9 +158,9 @@ if [ ! -f "$AL_ROOT/bin/mksh" ]; then
 fi
 
 # Install shadow
-fetch shadow-4.2.1.tar.xz http://pkg-shadow.alioth.debian.org/releases/ "$AL_SOURCES/shadow"
+fetch shadow-4.2.1.tar.xz http://pkg-shadow.alioth.debian.org/releases/ "$AL_ROOT/src/shadow"
 if [ ! -f "$AL_ROOT/bin/groups" ]; then
-    cd "$AL_SOURCES/shadow"
+    cd "$AL_ROOT/src/shadow"
     ./configure             \
         LDFLAGS="--static"  \
         --prefix="$AL_ROOT" \
@@ -151,15 +169,36 @@ if [ ! -f "$AL_ROOT/bin/groups" ]; then
         --sysconfdir="$AL_ROOT/etc"   \
         --with-group-name-max-length=32
     make $MAKEFLAGS install
+    make clean
     sed -i 's/yes/no/; s/bash/sh/' "$AL_ROOT/etc/default/useradd"
     cd $AL
 fi
 
 # Install Iana-Etc files
-fetch iana-etc-2.30.tar.bz2 http://anduin.linuxfromscratch.org/sources/LFS/lfs-packages/conglomeration/iana-etc/ "$AL_SOURCES/iana-etc"
+fetch iana-etc-2.30.tar.bz2 http://anduin.linuxfromscratch.org/sources/LFS/lfs-packages/conglomeration/iana-etc/ "$AL_ROOT/src/iana-etc"
 if [ ! -f "$AL_ROOT/etc/services" ]; then
-    cd "$AL_SOURCES/iana-etc"
+    cd "$AL_ROOT/src/iana-etc"
     make PREFIX="$AL_ROOT" install
+    make clean
+    cd $AL
+fi
+
+# Install curses
+gitclone https://github.com/sabotage-linux/netbsd-curses.git "$AL_ROOT/src/curses"
+if [ ! -f "$AL_ROOT/lib/libcurses.a" ]; then
+    cd "$AL_ROOT/src/curses/"
+    make $MAKE_FLAGS LDFLAGS=-static PREFIX=$AL_ROOT all-static install-static
+    make clean
+    cd $AL
+fi
+
+# Install sandy
+gitclone http://git.suckless.org/sandy "$AL_ROOT/src/sandy"
+if [ ! -f "$AL_ROOT/bin/sandy" ]; then
+    cd "$AL_ROOT/src/sandy/"
+    make $MAKE_FLAGS CC=$CC LD=$LD INCS="-I. -I$AL_ROOT/include" LIBS="-L$AL_ROOT/lib -lncurses -lterminfo"
+    make PREFIX=$AL_ROOT install
+    make clean
     cd $AL
 fi
 
@@ -169,9 +208,9 @@ fi
 # These packages should be replaced with non-gnu versions when possible
 
 # Install GNU awk
-fetch gawk-4.1.3.tar.xz http://ftp.gnu.org/gnu/gawk/ "$AL_SOURCES/gawk"
+fetch gawk-4.1.3.tar.xz http://ftp.gnu.org/gnu/gawk/ "$AL_ROOT/src/gawk"
 if [ ! -f "$AL_ROOT/bin/gawk" ]; then
-    cd "$AL_SOURCES/gawk"
+    cd "$AL_ROOT/src/gawk"
     ./configure              \
         LDFLAGS="--static"   \
         --prefix="$AL_ROOT"  \
@@ -180,60 +219,33 @@ if [ ! -f "$AL_ROOT/bin/gawk" ]; then
         --disable-nls        \
         --without-readline
     make $MAKEFLAGS gawk
-    cp "$AL_SOURCES/gawk/gawk" "$AL_ROOT/bin/gawk"
+    cp "$AL_ROOT/src/gawk/gawk" "$AL_ROOT/bin/gawk"
     ln -sfv gawk "$AL_ROOT/bin/awk"
+    make clean || true # gawks makefile is busted :(
     cd $AL
 fi
 
 # Install GNU diffutils
-fetch diffutils-3.3.tar.xz http://ftp.gnu.org/gnu/diffutils/ "$AL_SOURCES/diffutils"
+fetch diffutils-3.3.tar.xz http://ftp.gnu.org/gnu/diffutils/ "$AL_ROOT/src/diffutils"
 if [ ! -f "$AL_ROOT/bin/diff" ]; then
-    cd "$AL_SOURCES/diffutils"
+    cd "$AL_ROOT/src/diffutils"
     ./configure \
         --prefix="$AL_ROOT"
     make $MAKEFLAGS install
+    make clean
     cd $AL
 fi
 
 # Install GNU make
-fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_SOURCES/make"
+fetch make-4.1.tar.gz http://ftp.gnu.org/gnu/make/ "$AL_ROOT/src/make"
 if [ ! -f "$AL_ROOT/bin/make" ]; then
-    cd "$AL_SOURCES/make"
+    cd "$AL_ROOT/src/make"
     ./configure              \
         LDFLAGS="--static"   \
         --prefix="$AL_ROOT"  \
         --without-guile
     make $MAKEFLAGS install
+    make clean
     cd $AL
 fi
 
-###############################################################################
-# Finalize the Chroot
-###############################################################################
-#rm -r "$AL_TOOLS"
-#symlink "$AL_TGT-addr2line"  "$AL_TOOLS/bin/addr2line"
-#symlink "$AL_TGT-ar"         "$AL_TOOLS/bin/ar"
-#symlink "$AL_TGT-as"         "$AL_TOOLS/bin/as"
-#symlink "$AL_TGT-c++"        "$AL_TOOLS/bin/c++"
-#symlink "$AL_TGT-c++filt"    "$AL_TOOLS/bin/c++filt"
-#symlink "$AL_TGT-cpp"        "$AL_TOOLS/bin/cpp"
-#symlink "$AL_TGT-elfedit"    "$AL_TOOLS/bin/elfedit"
-#symlink "$AL_TGT-g++"        "$AL_TOOLS/bin/g++"
-#symlink "$AL_TGT-gcc"        "$AL_TOOLS/bin/gcc"
-#symlink "$AL_TGT-gcc-5.3.0"  "$AL_TOOLS/bin/gcc-5.3.0"
-#symlink "$AL_TGT-gcc-ar"     "$AL_TOOLS/bin/gcc-ar"
-#symlink "$AL_TGT-gcc-nm"     "$AL_TOOLS/bin/gcc-nm"
-#symlink "$AL_TGT-gcc-ranlib" "$AL_TOOLS/bin/gcc-ranlib"
-#symlink "$AL_TGT-gcov"       "$AL_TOOLS/bin/gcov"
-#symlink "$AL_TGT-gcov-tool"  "$AL_TOOLS/bin/gcov-tool"
-#symlink "$AL_TGT-gprof"      "$AL_TOOLS/bin/gprof"
-#symlink "$AL_TGT-ld"         "$AL_TOOLS/bin/ld"
-#symlink "$AL_TGT-ld.bfd"     "$AL_TOOLS/bin/ld.bfd"
-#symlink "$AL_TGT-nm"         "$AL_TOOLS/bin/nm"
-#symlink "$AL_TGT-objcopy"    "$AL_TOOLS/bin/objcopy"
-#symlink "$AL_TGT-objdump"    "$AL_TOOLS/bin/objdump"
-#symlink "$AL_TGT-ranlib"     "$AL_TOOLS/bin/ranlib"
-#symlink "$AL_TGT-readelf"    "$AL_TOOLS/bin/readelf"
-#symlink "$AL_TGT-size"       "$AL_TOOLS/bin/size"
-#symlink "$AL_TGT-strings"    "$AL_TOOLS/bin/strings"
-#symlink "$AL_TGT-strip"      "$AL_TOOLS/bin/strip"
